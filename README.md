@@ -1,159 +1,119 @@
-<a href="https://livekit.io/">
-  <img src="./.github/assets/livekit-mark.png" alt="LiveKit logo" width="100" height="100">
-</a>
+# Nail Salon Voice Agent
 
-# LiveKit Agents Starter - Python
+A production voice AI receptionist for a nail salon, built on [LiveKit Agents for Python](https://github.com/livekit/agents) and [LiveKit Cloud](https://cloud.livekit.io/). The agent answers calls, looks up services and pricing, checks real-time appointment availability, and books/cancels appointments directly through [Cal.com](https://cal.com/).
 
-A complete starter project for building voice AI apps with [LiveKit Agents for Python](https://github.com/livekit/agents) and [LiveKit Cloud](https://cloud.livekit.io/).
+## What this agent does
 
-The starter project includes:
+- Answers customer questions about salon services and pricing from a built-in menu
+- Checks live appointment availability against a connected Cal.com event type
+- Books appointments end-to-end, collecting name, phone number, and confirming details before booking
+- Ends the call automatically once a booking is confirmed
+- Speaks all responses in natural, TTS-friendly language (no markdown, no raw 24-hour times)
 
-- A simple voice AI assistant, ready for extension and customization
-- A voice AI pipeline built on [LiveKit Inference](https://docs.livekit.io/agents/models/inference), providing zero-configuration access to [models](https://docs.livekit.io/agents/models) from top labs
-  - Uses the fast, open-weight Gemma 4 31B model, [hosted by LiveKit](https://docs.livekit.io/agents/models/llm/livekit/) and tuned for optimal performance in voice AI, as the default LLM
-  - Supports more than 50 models from OpenAI, Cartesia, Deepgram, and other providers
-  - Access to a wide range of other models, including [Realtime models](https://docs.livekit.io/agents/models/realtime), through extensive plugin ecosystem
-- Eval suite based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/start/testing/)
-- [LiveKit Turn Detector](https://docs.livekit.io/agents/logic/turns/turn-detector/), an end-of-turn model that listens to the user's audio directly, combining semantic understanding with acoustic cues for state-of-the-art accuracy across 14 languages
-- [Background voice cancellation](https://docs.livekit.io/transport/media/noise-cancellation/)
-- Deep session insights from LiveKit [Agent Observability](https://docs.livekit.io/deploy/observability/)
-- A Dockerfile ready for [production deployment to LiveKit Cloud](https://docs.livekit.io/deploy/agents/)
+## Stack
 
-This starter app is compatible with any [custom web/mobile frontend](https://docs.livekit.io/frontends/) or [telephony](https://docs.livekit.io/telephony/).
+| Component | Provider |
+|---|---|
+| Voice orchestration | [LiveKit Agents](https://github.com/livekit/agents) |
+| STT | Deepgram (`nova-2`) |
+| LLM | Mistral AI |
+| TTS | Deepgram |
+| Scheduling | Cal.com API v2 |
+| Deployment | Docker → LiveKit Cloud |
 
-## Using coding agents
+## Project structure
 
-This project is designed to work with coding agents like [Claude Code](https://claude.com/product/claude-code), [Cursor](https://www.cursor.com/), and [Codex](https://openai.com/codex/).
-
-For your convenience, LiveKit offers both a CLI and an [MCP server](https://docs.livekit.io/reference/developer-tools/docs-mcp/) that can be used to browse and search its documentation. The [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/) (`lk docs`) works with any coding agent that can run shell commands. Install it for your platform:
-
-**macOS:**
-
-```console
-brew install livekit-cli
+```
+.
+├── src/
+│   └── nail_salon_agent.py    # Agent logic, tools, and entrypoint
+├── tests/                     # Pytest suite
+├── Dockerfile                 # Production container build
+├── pyproject.toml             # Dependencies
+├── uv.lock                    # Locked dependency versions (tracked in git)
+├── livekit.toml                # LiveKit Cloud deployment config
+└── .env                        # Local secrets (not tracked in git)
 ```
 
-**Linux:**
+## Environment variables
 
-```console
-curl -sSL https://get.livekit.io/cli | bash
+Create a `.env` file (never commit this) with the following, **unquoted**:
+
+```
+LIVEKIT_URL=wss://your-project.livekit.cloud
+LIVEKIT_API_KEY=your_livekit_api_key
+LIVEKIT_API_SECRET=your_livekit_api_secret
+
+DEEPGRAM_API_KEY=your_deepgram_api_key
+MISTRAL_API_KEY=your_mistral_api_key
+
+CAL_API_KEY=cal_live_xxxxxxxxxxxx
+CAL_EVENT_TYPE_ID=123456
+CAL_API_BASE=https://api.cal.com/v2
 ```
 
-**Windows:**
+> **Note:** Values must be unquoted. Docker's `--env-file` reads lines literally — wrapping a value in quotes (e.g. `LIVEKIT_URL="wss://..."`) will pass the quote characters through as part of the value and break the connection.
+
+## Local development
+
+Install dependencies:
 
 ```console
-winget install LiveKit.LiveKitCLI
-```
-
-The `lk docs` subcommand requires version 2.15.0 or higher. Check your version with `lk --version` and update if needed. Once installed, your coding agent can search and browse LiveKit documentation directly from the terminal:
-
-```console
-lk docs search "voice agents"
-lk docs get-page /agents/start/voice-ai-quickstart
-```
-
-See the [Using coding agents](https://docs.livekit.io/intro/coding-agents/) guide for more details, including MCP server setup.
-
-The project includes a complete [AGENTS.md](AGENTS.md) file for these assistants. You can modify this file to suit your needs. To learn more about this file, see [https://agents.md](https://agents.md).
-
-## Dev Setup
-
-Create a project from this template with the LiveKit CLI (recommended):
-
-```bash
-lk cloud auth
-lk agent init my-agent --template agent-starter-python
-```
-
-The CLI clones the template and configures your environment. Then follow the rest of this guide from [Run the agent](#run-the-agent).
-
-<details>
-<summary>Alternative: Manual setup without the CLI</summary>
-
-Clone the repository and install dependencies to a virtual environment:
-
-```console
-cd agent-starter-python
 uv sync
 ```
 
-Sign up for [LiveKit Cloud](https://cloud.livekit.io/) then set up the environment by copying `.env.example` to `.env.local` and filling in the required keys:
-
-- `LIVEKIT_URL`
-- `LIVEKIT_API_KEY`
-- `LIVEKIT_API_SECRET`
-
-You can load the LiveKit environment automatically using the [LiveKit CLI](https://docs.livekit.io/intro/basics/cli/):
-
-```bash
-lk cloud auth
-lk app env --write --destination .env.local
-```
-
-</details>
-
-## Run the agent
-
-Run this command to speak to your agent directly in your terminal:
+Run the agent interactively in your terminal (text/voice loop, no LiveKit room required):
 
 ```console
-uv run python src/agent.py console
+uv run python src/nail_salon_agent.py console
 ```
 
-To run the agent for use with a frontend or telephony, use the `dev` command:
+Run in dev mode, connected to a real LiveKit room for use with a frontend or the [Agents Playground](https://agents-playground.livekit.io/):
 
 ```console
-uv run python src/agent.py dev
+uv run python src/nail_salon_agent.py dev
 ```
 
-In production, use the `start` command:
+## Tests
 
 ```console
-uv run python src/agent.py start
+uv run pytest -v
 ```
 
-## Frontend & Telephony
+CI runs this suite, along with [Ruff](https://docs.astral.sh/ruff/) linting/formatting checks, on every push.
 
-Get started quickly with our pre-built frontend starter apps, or add telephony support:
+## Production deployment
 
-| Platform | Link | Description |
-|----------|----------|-------------|
-| **Web** | [`livekit-examples/agent-starter-react`](https://github.com/livekit-examples/agent-starter-react) | Web voice AI assistant with React & Next.js |
-| **iOS/macOS** | [`livekit-examples/agent-starter-swift`](https://github.com/livekit-examples/agent-starter-swift) | Native iOS, macOS, and visionOS voice AI assistant |
-| **Flutter** | [`livekit-examples/agent-starter-flutter`](https://github.com/livekit-examples/agent-starter-flutter) | Cross-platform voice AI assistant app |
-| **React Native** | [`livekit-examples/voice-assistant-react-native`](https://github.com/livekit-examples/voice-assistant-react-native) | Native mobile app with React Native & Expo |
-| **Android** | [`livekit-examples/agent-starter-android`](https://github.com/livekit-examples/agent-starter-android) | Native Android app with Kotlin & Jetpack Compose |
-| **Web Embed** | [`livekit-examples/agent-starter-embed`](https://github.com/livekit-examples/agent-starter-embed) | Voice AI widget for any website |
-| **Telephony** | [Documentation](https://docs.livekit.io/telephony/) | Add inbound or outbound calling to your agent |
-
-For advanced customization, see the [complete frontend guide](https://docs.livekit.io/frontends/).
-
-## Tests and evals
-
-This project includes a complete suite of evals, based on the LiveKit Agents [testing & evaluation framework](https://docs.livekit.io/agents/start/testing/). To run them, use `pytest`.
+### Build the Docker image
 
 ```console
-uv run pytest
+docker build -t nail-salon-agent .
 ```
 
-## Using this template repo for your own project
+### Run the container
 
-Once you've started your own project based on this repo, you should:
+```console
+docker run --env-file .env.local nail-salon-agent
+```
 
-1. **Check in your `uv.lock`**: This file is currently untracked for the template, but you should commit it to your repository for reproducible builds and proper configuration management. (The same applies to `livekit.toml`, if you run your agents in LiveKit Cloud)
+In production, the container runs the agent in `start` mode, which registers as a persistent worker and waits for LiveKit to dispatch it into rooms — it does not run an interactive session.
 
-2. **Remove the git tracking test**: Delete the "Check files not tracked in git" step from `.github/workflows/tests.yml` since you'll now want this file to be tracked. These are just there for development purposes in the template repo itself.
+### Deploying to LiveKit Cloud
 
-3. **Add your own repository secrets**: You must [add secrets](https://docs.github.com/en/actions/how-tos/writing-workflows/choosing-what-your-workflow-does/using-secrets-in-github-actions) for `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` so that the tests can run in CI.
+See LiveKit's [deploying to production](https://docs.livekit.io/deploy/agents/) guide. This project's `Dockerfile` is ready for that flow as-is.
 
-## Deploying to production
+## Connecting a frontend or telephony
 
-This project is production-ready and includes a working `Dockerfile`. To deploy it to LiveKit Cloud or another environment, see the [deploying to production](https://docs.livekit.io/deploy/agents/) guide.
+This agent is compatible with any [LiveKit frontend](https://docs.livekit.io/frontends/) or [telephony integration](https://docs.livekit.io/telephony/) — web, mobile, or inbound/outbound phone calls. Pick the integration that matches how customers will actually reach the salon (e.g. a phone number via LiveKit SIP trunking for a real receptionist replacement).
 
-## Self-hosted LiveKit
+## Cal.com setup notes
 
-You can also self-host LiveKit instead of using LiveKit Cloud. See the [self-hosting](https://docs.livekit.io/transport/self-hosting/local/) guide for more information. If you choose to self-host, you'll need to also use [model plugins](https://docs.livekit.io/agents/models/#plugins) instead of LiveKit Inference and will need to remove the [LiveKit Cloud noise cancellation](https://docs.livekit.io/transport/media/noise-cancellation/) plugin.
+A few non-obvious Cal.com configuration details this project depends on:
+
+- The event type's **Availability schedule** must be assigned correctly per event type — the account-level default schedule is not automatically used by every event type.
+- If bookings unexpectedly fail with `"already has booking or not available"`, check for stray test bookings or synced external calendar events blocking the requested slot.
+- Optional booking-question fields (e.g. a custom "Phone number" question, separate from the standard attendee phone field) can cause `invalid_number`-style errors if enabled and redundant with the agent's payload. Keep custom booking questions off unless intentionally wired up.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) for details.
